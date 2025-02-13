@@ -99,6 +99,7 @@ fn wipe_pod_cache_hard() {
     let cocoa_dir_string = shellexpand::tilde("~/Library/Caches/CocoaPods/").into_owned().to_string();
     let lock_for_writing = FileOptions::new().write(true).create_new(false);
 
+    println!(lockfile_path);
     let lock = match FileLock::lock(lockfile_path.clone(), true, lock_for_writing) {
         Ok(lock) => lock,
         Err(_err) => panic!("Error locking derived data!"),
