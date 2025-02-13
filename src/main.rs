@@ -215,7 +215,7 @@ fn _uses_bundler() -> bool {
     let gemfile_path_string = git_root() + "/Gemfile";
     let path = Path::new(&gemfile_path_string);
     let exists = fs::metadata(path).is_ok();
-    println!("Gemfile at {}: {}, bundler from {}: {}", gemfile_path_string, exists, gems, has_bundler);
+    println!("Gemfile at {}: {}, bundler: {}", gemfile_path_string, exists, has_bundler);
     exists && has_bundler
 }
 
