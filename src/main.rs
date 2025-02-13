@@ -182,17 +182,21 @@ fn wipe_pods() {
 fn install_pods() {
     let uses_bundler = _uses_bundler();
     if uses_bundler {
-        Command::new("bundle")
+        let output = Command::new("bundle")
             .args(["exec", "pod", "install", "--repo-update"])
             .current_dir(git_root())
             .output()
             .expect("failed to execute process");
+        let output_str = String::from_utf8(output.stdout).expect("Did not decode properly.");
+        println!("{}", output_str);
     } else {
-        Command::new("pod")
+        let output = Command::new("pod")
             .args(["install", "--repo-update"])
             .current_dir(git_root())
             .output()
             .expect("failed to execute process");
+        let output_str = String::from_utf8(output.stdout).expect("Did not decode properly.");
+        println!("{}", output_str);
     }
 }
 
