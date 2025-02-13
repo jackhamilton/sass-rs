@@ -19,7 +19,7 @@ struct Config {
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        panic!("Not enough arguments! Try -h for help.");
+        help();
     }
     let arg = args[1].clone();
     match arg.as_str() {
@@ -40,8 +40,19 @@ fn main() {
 }
 
 fn help() {
-    println!("Arguments:\n\t-h for help (this)\n\teval $(themester -r) to randomize your theme\
-        \n\teval $(themester -l) in your .zshrc to load the last session's theme environment variables");
+    println!("\
+        -h => print this help menu\n\
+        -c => cleans build intermediates that can cause problems\n\
+        -fc => cleans everything it can get its hands on (slow)\n\n\
+        -i => sets up a config file (allows a custom script to be executed on -fc end before pod install and package install run)\n\
+        -cp => uses swiftcli tools to clean your pods\n\
+        -cP => uses swiftcli tools to clean your packages\n\
+        -pp => manually purges pod artifacts\n\
+        -pd => purges derived data\n\
+        -rp => uses swiftcli tools to install SPM packages\n\
+        -ip => runs pod install (via bundler if detected)\n\
+        -d => runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)\n\n\
+    ");
     std::process::exit(0);
 }
 
@@ -132,7 +143,6 @@ fn wipe_pod_cache_hard() {
     let cocoa_dir_string = shellexpand::tilde("~/Library/Caches/CocoaPods/").into_owned().to_string();
     let lock_for_writing = FileOptions::new().write(true).create_new(false);
 
-    println!("{}", lockfile_path);
     let lock = match FileLock::lock(lockfile_path.clone(), true, lock_for_writing) {
         Ok(lock) => lock,
         Err(_err) => panic!("Error locking derived data!"),
