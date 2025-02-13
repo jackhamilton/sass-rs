@@ -76,6 +76,8 @@ fn full_clean() {
     let dur = time::Duration::from_millis(999);
     thread::sleep(dur);
     install_pods();
+    rebuild();
+    rebuild_build_server();
 }
 
 fn test() {
@@ -94,11 +96,12 @@ fn rebuild() {
     let workspace = config.workspace_name.expect("No workspace name found!");
     let scheme = config.scheme.expect("No scheme found!");
     let output = Command::new("xcodebuild")
-        .args(["-workspace", format!("{}.xcworkspace", workspace).as_str(), "-scheme", scheme.as_str(), "destination", r"'generic/platform=iOS Simulator'", "-resultBundlePath", ".bundle"])
+        .args(["-workspace", format!("{}.xcworkspace", workspace).as_str(), "-scheme", scheme.as_str(), "-destination", r"generic/platform=iOS Simulator", "-resultBundlePath", ".bundle", "OTHER_CFLAGS=\"-DCMAKE_C_COMPILER_LAUNCHER=$(which sccache) -DCMAKE_CXX_COMPILER_LAUNCHER=$(which sccache)\""])
         .current_dir(gitroot)
         .output()
         .expect("failed to execute process");
     println!("{}", String::from_utf8(output.stdout).expect("Error executing build"));
+    rebuild_build_server();
 }
 
 fn rebuild_build_server() {
@@ -107,7 +110,7 @@ fn rebuild_build_server() {
     let workspace = config.workspace_name.expect("No workspace name found!");
     let scheme = config.scheme.expect("No scheme found!");
     let output = Command::new("xcode-build-server")
-        .args(["config", format!("{}.xcworkspace", workspace).as_str(), "-scheme", scheme.as_str()])
+        .args(["config", "-workspace", format!("{}.xcworkspace", workspace).as_str(), "-scheme", scheme.as_str()])
         .current_dir(gitroot)
         .output()
         .expect("failed to execute process");
