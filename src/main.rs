@@ -68,6 +68,7 @@ fn full_clean() {
     install_deps_script();
     install_packages();
     install_pods();
+    install_pods();
 }
 
 fn test() {
