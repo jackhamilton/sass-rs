@@ -30,6 +30,7 @@ fn main() {
         "-wh" => wipe_pod_cache_hard(),
         "-wd" => wipe_derived_data(),
         "-rp" => install_packages(),
+        "-ip" => install_pods(),
         "-d" => install_deps_script().expect("Error"),
         "-t" => test(),
         _ => help(),
@@ -56,7 +57,7 @@ fn install_deps_script() -> Option<()> {
         .current_dir(git_root)
         .output()
         .expect("failed to execute process");
-    None
+    Some(())
 }
 
 fn wipe_derived_data() {
@@ -146,6 +147,24 @@ fn wipe_pods() {
     }
 }
 
+fn install_pods() {
+    let uses_bundler = _uses_bundler();
+    if uses_bundler {
+        Command::new("bundle")
+            .args(["exec", "pod", "install", "--repo-update"])
+            .current_dir(git_root())
+            .output()
+            .expect("failed to execute process");
+    } else {
+        Command::new("pod")
+            .args(["install", "--repo-update"])
+            .current_dir(git_root())
+            .output()
+            .expect("failed to execute process");
+    }
+}
+
+// TODO: apply to subprojects
 fn clean_packages() {
     let root = git_root();
     Command::new("swift")
@@ -196,6 +215,7 @@ fn _uses_bundler() -> bool {
     let gemfile_path_string = git_root() + "/Gemfile";
     let path = Path::new(&gemfile_path_string);
     let exists = fs::metadata(path).is_ok();
+    println!("Gemfile at {}: {}, bundler from {}: {}", gemfile_path_string, exists, gems, has_bundler);
     exists && has_bundler
 }
 
