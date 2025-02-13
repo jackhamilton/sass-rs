@@ -1,0 +1,11 @@
+[package]
+name = "sass"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+file-lock = "2.1.11"
+fs2 = "0.4.3"
+regex = "1.11.1"
+shellexpand = "3.0"
+toml = "0.8.19"
