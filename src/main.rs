@@ -24,11 +24,13 @@ fn main() {
     let arg = args[1].clone();
     match arg.as_str() {
         "-h" => help(),
+        "-c" => quick_clean(),
+        "-fc" => full_clean(),
         "-i" => setup_config_file(),
         "-wp" => wipe_pods(),
         "-wP" => clean_packages(),
         "-wh" => wipe_pod_cache_hard(),
-        "-wd" => wipe_derived_data(),
+        "-wd" => wipe_derived_data(false),
         "-rp" => install_packages(),
         "-ip" => install_pods(),
         "-d" => install_deps_script().expect("Error"),
@@ -41,6 +43,20 @@ fn help() {
     println!("Arguments:\n\t-h for help (this)\n\teval $(themester -r) to randomize your theme\
         \n\teval $(themester -l) in your .zshrc to load the last session's theme environment variables");
     std::process::exit(0);
+}
+
+fn quick_clean() {
+    wipe_derived_data(true)
+}
+
+fn full_clean() {
+    wipe_pods();
+    clean_packages();
+    wipe_pod_cache_hard();
+    wipe_derived_data(false);
+    install_deps_script();
+    install_packages();
+    install_pods();
 }
 
 fn test() {
@@ -60,7 +76,7 @@ fn install_deps_script() -> Option<()> {
     Some(())
 }
 
-fn wipe_derived_data() {
+fn wipe_derived_data(intermediates_only: bool) {
     let paths = get_derived_data_folders().unwrap_or_else(|_| Vec::new());
     let xcode_dd_search = Regex::new(r"^.*-.*$").expect("DerivedData regex failed to parse");
     for path in paths {
@@ -81,12 +97,18 @@ fn wipe_derived_data() {
             Err(_err) => panic!("Error locking derived data!"),
         };
         let _= lock.unlock();
-        let retry_dur = time::Duration::from_millis(1000);
-        let retry_cap = 15;
-        for i in 0..retry_cap {
-            match fs::remove_dir_all(path.clone()) {
+        let retry_dur = time::Duration::from_millis(999);
+        let retry_cap = 14;
+        let mut target_path = path;
+        if intermediates_only {
+            target_path.push("Build");
+            target_path.push("Intermediates.noindex");
+            target_path.push("PrecompiledHeaders");
+        }
+        for i in -1..retry_cap {
+            match fs::remove_dir_all(target_path.clone()) {
                 Ok(_some) => return,
-                Err(error) => println!("Error: {}. Directory could be locked, retrying. Attempt {} of 15.", error, i),
+                Err(error) => println!("Error: {}. Directory could be locked, retrying. Attempt {} of 14.", error, i),
             }
             thread::sleep(retry_dur);
         }
@@ -215,7 +237,6 @@ fn _uses_bundler() -> bool {
     let gemfile_path_string = git_root() + "/Gemfile";
     let path = Path::new(&gemfile_path_string);
     let exists = fs::metadata(path).is_ok();
-    println!("Gemfile at {}: {}, bundler: {}", gemfile_path_string, exists, has_bundler);
     exists && has_bundler
 }
 
@@ -226,7 +247,6 @@ fn git_root() -> String {
             .expect("failed to execute process");
     let mut str = String::from_utf8(output.stdout).unwrap_or(String::from(""));
     str.pop();
-    println!("{}", str);
     str
 }
 
