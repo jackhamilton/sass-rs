@@ -206,6 +206,7 @@ fn git_root() -> String {
             .expect("failed to execute process");
     let mut str = String::from_utf8(output.stdout).unwrap_or(String::from(""));
     str.pop();
+    println!("{}", str);
     str
 }
 
