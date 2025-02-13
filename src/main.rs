@@ -206,7 +206,7 @@ fn _uses_bundler() -> bool {
             .expect("failed to execute process");
 
     let gems = String::from_utf8(output.stdout).unwrap_or(String::from(""));
-    let bundler_search = Regex::new(r"^bundler").expect("Bundler regex failed to parse");
+    let bundler_search = Regex::new(r"bundler").expect("Bundler regex failed to parse");
     let has_bundler = match bundler_search.captures(&gems) {
         Some(_expr) => true,
         None => false,
