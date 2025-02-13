@@ -13,7 +13,9 @@ use file_lock::{FileOptions, FileLock};
 
 #[derive(Clone)]
 struct Config {
-    post_install_script_location: Option<String>
+    post_install_script_location: Option<String>,
+    scheme: Option<String>,
+    workspace_name: Option<String>,
 }
 
 fn main() {
@@ -26,6 +28,8 @@ fn main() {
         "-h" => help(),
         "-c" => quick_clean(),
         "-fc" => full_clean(),
+        "-rb" => rebuild(),
+        "-bs" => rebuild_build_server(),
         "-i" => setup_config_file(),
         "-cp" => wipe_pods(),
         "-cP" => clean_packages(),
@@ -43,8 +47,10 @@ fn help() {
     println!("\
         -h => print this help menu\n\
         -c => cleans build intermediates that can cause problems\n\
+        -rb => rebuilds the project via xcodebuild on your configured workspace and scheme, then rebuilds the build server\n\
+        -bs => reconstructs buildServer.json via your configured workspace and scheme\n\
         -fc => cleans everything it can get its hands on (slow)\n\n\
-        -i => sets up a config file (allows a custom script to be executed on -fc end before pod install and package install run)\n\
+        -i => sets up a config file\n\
         -cp => uses swiftcli tools to clean your pods\n\
         -cP => uses swiftcli tools to clean your packages\n\
         -pp => manually purges pod artifacts\n\
@@ -67,13 +73,45 @@ fn full_clean() {
     wipe_derived_data(false);
     install_deps_script();
     install_packages();
-    install_pods();
+    let dur = time::Duration::from_millis(999);
+    thread::sleep(dur);
     install_pods();
 }
 
 fn test() {
     let ret = _uses_bundler();
     println!("{}", ret);
+}
+
+fn rebuild() {
+    let config = setup_and_get_config();
+    let gitroot = git_root();
+    let pods_dir = gitroot.clone() + "/.bundle/";
+    match fs::remove_dir_all(pods_dir) {
+        Ok(_result) => (),
+        Err(error) => println!("Error: {}", error),
+    }
+    let workspace = config.workspace_name.expect("No workspace name found!");
+    let scheme = config.scheme.expect("No scheme found!");
+    let output = Command::new("xcodebuild")
+        .args(["-workspace", format!("{}.xcworkspace", workspace).as_str(), "-scheme", scheme.as_str(), "destination", r"'generic/platform=iOS Simulator'", "-resultBundlePath", ".bundle"])
+        .current_dir(gitroot)
+        .output()
+        .expect("failed to execute process");
+    println!("{}", String::from_utf8(output.stdout).expect("Error executing build"));
+}
+
+fn rebuild_build_server() {
+    let config = setup_and_get_config();
+    let gitroot = git_root();
+    let workspace = config.workspace_name.expect("No workspace name found!");
+    let scheme = config.scheme.expect("No scheme found!");
+    let output = Command::new("xcode-build-server")
+        .args(["config", format!("{}.xcworkspace", workspace).as_str(), "-scheme", scheme.as_str()])
+        .current_dir(gitroot)
+        .output()
+        .expect("failed to execute process");
+    println!("{}", String::from_utf8(output.stdout).expect("Error constructing build server"));
 }
 
 fn install_deps_script() -> Option<()> {
@@ -288,7 +326,9 @@ fn setup_config_file() {
             println!("! {:?}", why.kind());
         });
         let default_config = "#Relative to project's git root\n\
-            post_install_script_location = \"/scripts/install_dependencies.sh\"\n\n";
+            post_install_script_location = \"/scripts/install_dependencies.sh\"\n\n\
+            workspace_name = \"\"\n\
+            scheme = \"\"\n";
         fs::write(config_path, default_config).expect("echo \"Unable to write config file.\"")
     }
 }
@@ -305,8 +345,24 @@ fn load_config() -> Config {
             post_install_script_location = Some(unwrap.to_string())
         }
     }
+    let mut scheme: Option<String> = None;
+    if config.contains_key("scheme") {
+        let scheme_str = config["scheme"].as_str();
+        if let Some(unwrap) = scheme_str {
+            scheme = Some(unwrap.to_string())
+        }
+    }
+    let mut workspace_name: Option<String> = None;
+    if config.contains_key("workspace_name") {
+        let workspace_name_str = config["workspace_name"].as_str();
+        if let Some(unwrap) = workspace_name_str {
+            workspace_name = Some(unwrap.to_string())
+        }
+    }
     Config {
-        post_install_script_location
+        post_install_script_location,
+        scheme,
+        workspace_name
     }
 }
 
