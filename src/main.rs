@@ -183,7 +183,6 @@ fn _uses_bundler() -> bool {
     };
 
     let gemfile_path_string = git_root() + "/Gemfile";
-    println!("{}", gemfile_path_string);
     let path = Path::new(&gemfile_path_string);
     let exists = fs::metadata(path).is_ok();
     exists && has_bundler
@@ -194,7 +193,9 @@ fn git_root() -> String {
             .args(["rev-parse", "--show-toplevel"])
             .output()
             .expect("failed to execute process");
-    String::from_utf8(output.stdout).unwrap_or(String::from(""))
+    let mut str = String::from_utf8(output.stdout).unwrap_or(String::from(""));
+    str.pop();
+    str
 }
 
 fn setup_and_get_config() -> Config {
