@@ -5,6 +5,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::env;
 use std::process::Command;
+use std::{thread, time};
 
 use regex::Regex;
 use toml::Table;
@@ -79,7 +80,16 @@ fn wipe_derived_data() {
             Err(_err) => panic!("Error locking derived data!"),
         };
         let _= lock.unlock();
-        fs::remove_dir_all(path).expect("Error deleting derived data!");
+        let retry_dur = time::Duration::from_millis(1000);
+        let retry_cap = 15;
+        for i in 0..retry_cap {
+            match fs::remove_dir_all(path.clone()) {
+                Ok(_some) => return,
+                Err(error) => println!("Error: {}. Directory could be locked, retrying. Attempt {} of 15.", error, i),
+            }
+            thread::sleep(retry_dur);
+        }
+        println!("Failed to lock directory.");
     }
 }
 
@@ -95,7 +105,7 @@ fn get_derived_data_folders() -> io::Result<Vec<PathBuf>> {
 fn wipe_pod_cache_hard() {
     let gitroot = git_root();
     let pods_dir = gitroot.clone() + "/Pods/";
-    let lockfile_path = gitroot + "/Pods/";
+    let lockfile_path = gitroot + "/Podfile.lock";
     let cocoa_dir_string = shellexpand::tilde("~/Library/Caches/CocoaPods/").into_owned().to_string();
     let lock_for_writing = FileOptions::new().write(true).create_new(false);
 
