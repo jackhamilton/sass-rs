@@ -48,22 +48,24 @@ fn main() {
 
 fn help() {
     println!("\
-        -h => print this help menu\n\
+        -h => print this help menu\n\n\
+        -- Basic --\n\
         -qc => cleans build intermediates that can cause problems\n\
-        -c => rebuilds project without force-purging anything besides derived data\n\
-        -fc => rebuilds project, force purging everything it can\n\
+        -c => cleans derived data and packages and rebuilds project\n\
+        -fc => rebuilds project, force purging everything it can (slow)\n\
         -rb => rebuilds the project via xcodebuild on your configured workspace and scheme, then rebuilds the build server\n\
         -bs => reconstructs buildServer.json via your configured workspace and scheme\n\
-        -p => reinstalls spm packages in non-build subdirectories\n\
-        -fc => cleans everything it can get its hands on (slow)\n\n\
-        -i => sets up a config file\n\
+        -p => reinstalls spm packages in non-build subdirectories\n\n\
+        -- Config --\n\
+        -i => sets up a config file\n\n\
+        -- Fine-grained control commands -- \n\
+        -d => runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)\n\
         -cp => uses swiftcli tools to clean your pods\n\
         -cP => uses swiftcli tools to clean your packages\n\
         -pp => manually purges pod artifacts\n\
         -pd => purges derived data\n\
         -rp => uses swiftcli tools to install SPM packages\n\
         -ip => runs pod install (via bundler if detected)\n\
-        -d => runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)\n\n\
     ");
     std::process::exit(0);
 }
@@ -104,6 +106,7 @@ fn test() {
 }
 
 fn rebuild() {
+    println!("Building...");
     let config = setup_and_get_config();
     let gitroot = git_root();
     let pods_dir = gitroot.clone() + "/.bundle/";
@@ -123,6 +126,7 @@ fn rebuild() {
 }
 
 fn rebuild_build_server() {
+    println!("Generating buildServer.json...");
     let config = setup_and_get_config();
     let gitroot = git_root();
     let workspace = config.workspace_name.expect("No workspace name found!");
@@ -136,6 +140,7 @@ fn rebuild_build_server() {
 }
 
 fn install_deps_script() -> Option<()> {
+    println!("Executing dependency installation script.");
     let config = setup_and_get_config();
     let git_root = git_root();
     let script_dir = git_root.clone() + config.post_install_script_location?.as_str();
@@ -148,6 +153,7 @@ fn install_deps_script() -> Option<()> {
 }
 
 fn wipe_derived_data(intermediates_only: bool) {
+    println!("Cleaning DerivedData...");
     let paths = get_derived_data_folders().unwrap_or_else(|_| Vec::new());
     let xcode_dd_search = Regex::new(r"^.*-.*$").expect("DerivedData regex failed to parse");
     for path in paths {
@@ -169,17 +175,16 @@ fn wipe_derived_data(intermediates_only: bool) {
         };
         let _= lock.unlock();
         let retry_dur = time::Duration::from_millis(999);
-        let retry_cap = 14;
+        let retry_cap = 15;
         let mut target_path = path;
         if intermediates_only {
             target_path.push("Build");
             target_path.push("Intermediates.noindex");
-            target_path.push("PrecompiledHeaders");
         }
-        for i in -1..retry_cap {
+        for i in 1..retry_cap {
             match fs::remove_dir_all(target_path.clone()) {
                 Ok(_some) => return,
-                Err(error) => println!("Error: {}. Directory could be locked, retrying. Attempt {} of 14.", error, i),
+                Err(error) => println!("Error: {}. Directory could be locked, retrying. Attempt {} of 15.", error, i),
             }
             thread::sleep(retry_dur);
         }
@@ -197,6 +202,7 @@ fn get_derived_data_folders() -> io::Result<Vec<PathBuf>> {
 }
 
 fn wipe_pod_cache_hard() {
+    println!("Hard clearing pod cache...");
     let gitroot = git_root();
     let pods_dir = gitroot.clone() + "/Pods/";
     let lockfile_path = gitroot + "/Podfile.lock";
@@ -223,6 +229,7 @@ fn wipe_pod_cache_hard() {
 }
 
 fn wipe_pods() {
+    println!("Clearing pod cache...");
     let uses_bundler = _uses_bundler();
     if uses_bundler {
         Command::new("bundle")
@@ -240,6 +247,7 @@ fn wipe_pods() {
 }
 
 fn install_pods() {
+    println!("Installing pods...");
     let uses_bundler = _uses_bundler();
     if uses_bundler {
         let output = Command::new("bundle")
@@ -378,6 +386,7 @@ fn setup_and_get_config() -> Config {
 }
 
 fn setup_config_file() {
+    println!("Setting up configuration file.");
     let dir_path_string = shellexpand::tilde("~/.config/sass/").into_owned().to_string();
     let dir_path = Path::new(&dir_path_string);
     let dir_exists = fs::metadata(dir_path).is_ok();
