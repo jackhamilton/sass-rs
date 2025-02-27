@@ -10,6 +10,7 @@ use std::{thread, time};
 use regex::Regex;
 use toml::Table;
 use file_lock::{FileOptions, FileLock};
+use walkdir::WalkDir;
 
 #[derive(Clone)]
 struct Config {
@@ -26,7 +27,8 @@ fn main() {
     let arg = args[1].clone();
     match arg.as_str() {
         "-h" => help(),
-        "-c" => quick_clean(),
+        "-qc" => quick_clean(),
+        "-c" => clean(),
         "-fc" => full_clean(),
         "-rb" => rebuild(),
         "-bs" => rebuild_build_server(),
@@ -38,6 +40,7 @@ fn main() {
         "-rp" => install_packages(),
         "-ip" => install_pods(),
         "-d" => install_deps_script().expect("Error"),
+        "-p" => reset_packages(),
         "-t" => test(),
         _ => help(),
     }
@@ -46,9 +49,12 @@ fn main() {
 fn help() {
     println!("\
         -h => print this help menu\n\
-        -c => cleans build intermediates that can cause problems\n\
+        -qc => cleans build intermediates that can cause problems\n\
+        -c => rebuilds project without force-purging anything besides derived data\n\
+        -fc => rebuilds project, force purging everything it can\n\
         -rb => rebuilds the project via xcodebuild on your configured workspace and scheme, then rebuilds the build server\n\
         -bs => reconstructs buildServer.json via your configured workspace and scheme\n\
+        -p => reinstalls spm packages in non-build subdirectories\n\
         -fc => cleans everything it can get its hands on (slow)\n\n\
         -i => sets up a config file\n\
         -cp => uses swiftcli tools to clean your pods\n\
@@ -62,12 +68,24 @@ fn help() {
     std::process::exit(0);
 }
 
+fn reset_packages() {
+    clean_packages();
+    install_packages();
+}
+
 fn quick_clean() {
-    wipe_derived_data(true)
+    wipe_derived_data(true);
+}
+
+fn clean() {
+    clean_packages();
+    wipe_derived_data(false);
+    install_packages();
+    rebuild();
+    rebuild_build_server();
 }
 
 fn full_clean() {
-    wipe_pods();
     clean_packages();
     wipe_pod_cache_hard();
     wipe_derived_data(false);
@@ -245,35 +263,83 @@ fn install_pods() {
 // TODO: apply to subprojects
 fn clean_packages() {
     let root = git_root();
-    Command::new("swift")
-        .args(["package", "purge-cache"])
-        .current_dir(root.clone())
-        .output()
-        .expect("failed to execute process");
-    Command::new("swift")
-        .args(["package", "reset"])
-        .current_dir(root.clone())
-        .output()
-        .expect("failed to execute process");
-    Command::new("swift")
-        .args(["package", "clean"])
-        .current_dir(root)
-        .output()
-        .expect("failed to execute process");
+    let package_regex = Regex::new(r"ackage\.swift").expect("Package search regex failed to parse");
+    let build_regex = Regex::new(r"\.build").expect("Build dir search regex failed to parse");
+    let mut package_roots: Vec<PathBuf> = Vec::new();
+    let walker = WalkDir::new(root);
+    for entry in walker {
+        let path = entry.unwrap().into_path();
+
+        let has_package = match package_regex.captures(&path.to_string_lossy()) {
+            Some(_expr) => true,
+            None => false,
+        };
+        let has_build_dir = match build_regex.captures(&path.to_string_lossy()) {
+            Some(_expr) => true,
+            None => false,
+        };
+        if has_package && !has_build_dir {
+            package_roots.push(path);
+        }
+    }
+
+    for mut package_loc in package_roots {
+        package_loc.pop();
+        println!("Executing package clean in {}", &package_loc.to_string_lossy());
+        Command::new("swift")
+            .args(["package", "purge-cache"])
+            .current_dir(&package_loc)
+            .output()
+            .expect("failed to execute process");
+        Command::new("swift")
+            .args(["package", "reset"])
+            .current_dir(&package_loc)
+            .output()
+            .expect("failed to execute process");
+        Command::new("swift")
+            .args(["package", "clean"])
+            .current_dir(&package_loc)
+            .output()
+            .expect("failed to execute process");
+    }
 }
 
 fn install_packages() {
     let root = git_root();
-    Command::new("swift")
-        .args(["package", "resolve"])
-        .current_dir(root.clone())
-        .output()
-        .expect("failed to execute process");
-    Command::new("swift")
-        .args(["package", "update"])
-        .current_dir(root.clone())
-        .output()
-        .expect("failed to execute process");
+    let package_regex = Regex::new(r"ackage\.swift").expect("Package search regex failed to parse");
+    let build_regex = Regex::new(r"\.build").expect("Build dir search regex failed to parse");
+    let mut package_roots: Vec<PathBuf> = Vec::new();
+    let walker = WalkDir::new(root);
+    for entry in walker {
+        let path = entry.unwrap().into_path();
+
+        let has_package = match package_regex.captures(&path.to_string_lossy()) {
+            Some(_expr) => true,
+            None => false,
+        };
+        let has_build_dir = match build_regex.captures(&path.to_string_lossy()) {
+            Some(_expr) => true,
+            None => false,
+        };
+        if has_package && !has_build_dir {
+            package_roots.push(path);
+        }
+    }
+
+    for mut package_loc in package_roots {
+        package_loc.pop();
+        println!("Executing package build in {}", &package_loc.to_string_lossy());
+        Command::new("swift")
+            .args(["package", "resolve"])
+            .current_dir(&package_loc)
+            .output()
+            .expect("failed to execute process");
+        Command::new("swift")
+            .args(["package", "update"])
+            .current_dir(&package_loc)
+            .output()
+            .expect("failed to execute process");
+    }
 }
 
 // Checks if you use a bundler
