@@ -29,33 +29,33 @@ fn main() {
         "-h" => help(),
         "--help" => help(),
         "-qc" => quick_clean(),
-        "--quick_clean" => quick_clean(),
+        "--quick-clean" => quick_clean(),
         "-c" => clean(),
         "--clean" => clean(),
         "-fc" => full_clean(),
-        "--full_clean" => full_clean(),
+        "--full-clean" => full_clean(),
         "-rb" => rebuild(),
         "--rebuild" => rebuild(),
         "-bs" => rebuild_build_server(),
-        "--build_server" => rebuild_build_server(),
+        "--build-server" => rebuild_build_server(),
         "-i" => setup_config_file(),
         "--config" => setup_config_file(),
         "-cp" => wipe_pods(),
-        "--clean_pods" => wipe_pods(),
+        "--clean-pods" => wipe_pods(),
         "-cP" => clean_packages(),
-        "--clean_packages" => clean_packages(),
+        "--clean-packages" => clean_packages(),
         "-ph" => wipe_pod_cache_hard(),
-        "--wipe_pods" => wipe_pod_cache_hard(),
+        "--wipe-pods" => wipe_pod_cache_hard(),
         "-pd" => wipe_derived_data(false),
-        "--wipe_derived" => wipe_derived_data(false),
+        "--wipe-derived" => wipe_derived_data(false),
         "-rp" => install_packages(),
-        "--install_packages" => install_packages(),
+        "--install-packages" => install_packages(),
         "-ip" => install_pods(),
-        "--install_pods" => install_pods(),
+        "--install-pods" => install_pods(),
         "-d" => install_deps_script().expect("Error"),
-        "--run_deps_script" => install_deps_script().expect("Error"),
+        "--run-deps-script" => install_deps_script().expect("Error"),
         "-p" => reset_packages(),
-        "--reset_packages" => reset_packages(),
+        "--reset-packages" => reset_packages(),
         "-t" => test(),
         _ => help(),
     }
@@ -65,21 +65,21 @@ fn help() {
     println!("\
         -h => print this help menu\n\n\
         -- Basic --\n\
-        --quick_clean, -qc => cleans build intermediates that can cause problems\n\
+        --quick-clean, -qc => cleans build intermediates that can cause problems\n\
         --clean, -c => cleans derived data and packages and rebuilds project\n\
-        --full_clean, -fc => rebuilds project, force purging everything it can (slow)\n\
+        --full-clean, -fc => rebuilds project, force purging everything it can (slow)\n\
         --rebuild, -rb => rebuilds the project via xcodebuild on your configured workspace and scheme, then rebuilds the build server\n\
-        --build_server, -bs => reconstructs buildServer.json via your configured workspace and scheme\n\
-        --reset_packages, -p => reinstalls spm packages in non-build subdirectories\n\n\
+        --build-server, -bs => reconstructs buildServer.json via your configured workspace and scheme\n\
+        --reset-packages, -p => reinstalls spm packages in non-build subdirectories\n\n\
         -- Config --\n\
         --config, -i => sets up a config file\n\n\
         -- Fine-grained control commands -- \n\
-        --run_deps_script, -d => runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)\n\
-        --clean_pods, -cp => uses swiftcli tools to clean your pods\n\
-        --clean_packages, -cP => uses swiftcli tools to clean your packages\n\
-        --wipe_derived, -pd => purges derived data\n\
-        --install_packages, -rp => uses swiftcli tools to install SPM packages\n\
-        --install_pods, -ip => runs pod install (via bundler if detected)\n\
+        --run-deps-script, -d => runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)\n\
+        --clean-pods, -cp => uses swiftcli tools to clean your pods\n\
+        --clean-packages, -cP => uses swiftcli tools to clean your packages\n\
+        --wipe-derived, -pd => purges derived data\n\
+        --install-packages, -rp => uses swiftcli tools to install SPM packages\n\
+        --install-pods, -ip => runs pod install (via bundler if detected)\n\
     ");
     std::process::exit(0);
 }
