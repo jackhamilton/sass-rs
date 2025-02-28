@@ -30,14 +30,6 @@ jobs:
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
-      with:
-        components: clippy
-
-    - name: Build
-      if: matrix.os != 'ubuntu-22.04'
-      env:
-        GITUI_RELEASE: 1
-      run: cargo build
 
     - name: Build Release Mac
       if: matrix.os == 'macos-latest'
@@ -79,6 +71,6 @@ jobs:
       env:
         COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
       with:
-        formula-name: gitui
+        formula-name: sass
         # https://github.com/mislav/bump-homebrew-formula-action/issues/58
-        formula-path: Formula/g/gitui.rb
+        formula-path: Formula/sass.rb
