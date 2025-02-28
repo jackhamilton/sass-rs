@@ -27,20 +27,35 @@ fn main() {
     let arg = args[1].clone();
     match arg.as_str() {
         "-h" => help(),
+        "--help" => help(),
         "-qc" => quick_clean(),
+        "--quick_clean" => quick_clean(),
         "-c" => clean(),
+        "--clean" => clean(),
         "-fc" => full_clean(),
+        "--full_clean" => full_clean(),
         "-rb" => rebuild(),
+        "--rebuild" => rebuild(),
         "-bs" => rebuild_build_server(),
+        "--build_server" => rebuild_build_server(),
         "-i" => setup_config_file(),
+        "--config" => setup_config_file(),
         "-cp" => wipe_pods(),
+        "--clean_pods" => wipe_pods(),
         "-cP" => clean_packages(),
+        "--clean_packages" => clean_packages(),
         "-ph" => wipe_pod_cache_hard(),
+        "--wipe_pods" => wipe_pod_cache_hard(),
         "-pd" => wipe_derived_data(false),
+        "--wipe_derived" => wipe_derived_data(false),
         "-rp" => install_packages(),
+        "--install_packages" => install_packages(),
         "-ip" => install_pods(),
+        "--install_pods" => install_pods(),
         "-d" => install_deps_script().expect("Error"),
+        "--run_deps_script" => install_deps_script().expect("Error"),
         "-p" => reset_packages(),
+        "--reset_packages" => reset_packages(),
         "-t" => test(),
         _ => help(),
     }
@@ -50,22 +65,21 @@ fn help() {
     println!("\
         -h => print this help menu\n\n\
         -- Basic --\n\
-        -qc => cleans build intermediates that can cause problems\n\
-        -c => cleans derived data and packages and rebuilds project\n\
-        -fc => rebuilds project, force purging everything it can (slow)\n\
-        -rb => rebuilds the project via xcodebuild on your configured workspace and scheme, then rebuilds the build server\n\
-        -bs => reconstructs buildServer.json via your configured workspace and scheme\n\
-        -p => reinstalls spm packages in non-build subdirectories\n\n\
+        --quick_clean, -qc => cleans build intermediates that can cause problems\n\
+        --clean, -c => cleans derived data and packages and rebuilds project\n\
+        --full_clean, -fc => rebuilds project, force purging everything it can (slow)\n\
+        --rebuild, -rb => rebuilds the project via xcodebuild on your configured workspace and scheme, then rebuilds the build server\n\
+        --build_server, -bs => reconstructs buildServer.json via your configured workspace and scheme\n\
+        --reset_packages, -p => reinstalls spm packages in non-build subdirectories\n\n\
         -- Config --\n\
-        -i => sets up a config file\n\n\
+        --config, -i => sets up a config file\n\n\
         -- Fine-grained control commands -- \n\
-        -d => runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)\n\
-        -cp => uses swiftcli tools to clean your pods\n\
-        -cP => uses swiftcli tools to clean your packages\n\
-        -pp => manually purges pod artifacts\n\
-        -pd => purges derived data\n\
-        -rp => uses swiftcli tools to install SPM packages\n\
-        -ip => runs pod install (via bundler if detected)\n\
+        --run_deps_script, -d => runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)\n\
+        --clean_pods, -cp => uses swiftcli tools to clean your pods\n\
+        --clean_packages, -cP => uses swiftcli tools to clean your packages\n\
+        --wipe_derived, -pd => purges derived data\n\
+        --install_packages, -rp => uses swiftcli tools to install SPM packages\n\
+        --install_pods, -ip => runs pod install (via bundler if detected)\n\
     ");
     std::process::exit(0);
 }
