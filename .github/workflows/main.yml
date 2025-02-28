@@ -1,0 +1,92 @@
+name: CD
+
+on:
+  push:
+   tags:
+     - '*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Get version
+      id: get_version
+      run: echo "version=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
+
+    - name: Restore cargo cache
+      uses: Swatinem/rust-cache@v2
+      env:
+        cache-name: ci
+      with:
+        shared-key: ${{ matrix.os }}-${{ env.cache-name }}-stable
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+
+    - name: Build
+      if: matrix.os != 'ubuntu-22.04'
+      env:
+        GITUI_RELEASE: 1
+      run: cargo build
+    - name: Run tests
+      if: matrix.os != 'ubuntu-22.04'
+      run: make test
+    - name: Run clippy
+      if: matrix.os != 'ubuntu-22.04'
+      run: |
+        cargo clean
+        make clippy
+
+    - name: Build Release Mac
+      if: matrix.os == 'macos-latest'
+      env:
+        GITUI_RELEASE: 1
+      run: cargo build --release
+        
+    - name: Entar
+      if: matrix.os == 'macos-latest'
+      run: |
+        tar -czf /target/release/sass-mac.tar.gz /target/release/sass
+
+    - name: Set SHA
+      if: matrix.os == 'macos-latest'
+      id: shasum
+      run: |
+        echo sha="$(shasum -a 256 /target/release/sass-mac.tar.gz | awk '{printf $1}')" >> $GITHUB_OUTPUT
+
+    - name: Extract release notes
+      if: matrix.os == 'ubuntu-latest'
+      id: release_notes
+      uses: ffurrer2/extract-release-notes@v2
+      
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        body: ${{ steps.release_notes.outputs.release_notes }}
+        prerelease: ${{ contains(github.ref, '-') }}
+        files: |
+          ./release/*.tar.gz
+          ./release/*.zip
+          ./release/*.msi
+
+    - name: Bump homebrew-core formula
+      uses: mislav/bump-homebrew-formula-action@v3
+      if: "matrix.os == 'macos-latest' && !contains(github.ref, '-')" # skip prereleases
+      env:
+        COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
+      with:
+        formula-name: gitui
+        # https://github.com/mislav/bump-homebrew-formula-action/issues/58
+        formula-path: Formula/g/gitui.rb
