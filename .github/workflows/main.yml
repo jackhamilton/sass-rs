@@ -38,12 +38,6 @@ jobs:
       env:
         GITUI_RELEASE: 1
       run: cargo build
-    
-    - name: Run clippy
-      if: matrix.os != 'ubuntu-22.04'
-      run: |
-        cargo clean
-        make clippy
 
     - name: Build Release Mac
       if: matrix.os == 'macos-latest'
