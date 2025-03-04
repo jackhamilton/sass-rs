@@ -7,6 +7,7 @@ use std::env;
 use std::process::Command;
 use std::{thread, time};
 
+use copy_dir::copy_dir;
 use regex::Regex;
 use toml::Table;
 use file_lock::{FileOptions, FileLock};
@@ -56,6 +57,8 @@ fn main() {
         "--run-deps-script" => install_deps_script().expect("Error"),
         "-p" => reset_packages(),
         "--reset-packages" => reset_packages(),
+        "-ut" => update_templates(),
+        "--update-templates" => update_templates(),
         "-t" => test(),
         _ => help(),
     }
@@ -72,9 +75,10 @@ fn help() {
         --build-server, -bs => reconstructs buildServer.json via your configured workspace and scheme\n\
         --reset-packages, -p => reinstalls spm packages in non-build subdirectories\n\n\
         -- Config --\n\
-        --config, -i => sets up a config file\n\n\
-        -- Fine-grained control commands -- \n\
+        --config, -i => sets up a config file\n\
         --run-deps-script, -d => runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)\n\
+        --update-templates, -ut => copies the contents of ~/.config/sass/templates/ to your xcode templates dir under a 'sass' subfolder, overwriting previous contents\n\n\
+        -- Fine-grained control commands -- \n\
         --clean-pods, -cp => uses swiftcli tools to clean your pods\n\
         --clean-packages, -cP => uses swiftcli tools to clean your packages\n\
         --wipe-derived, -pd => purges derived data\n\
@@ -398,6 +402,24 @@ fn git_root() -> String {
 fn setup_and_get_config() -> Config {
     setup_config_file();
     load_config()
+}
+
+fn update_templates() {
+   println!("Updating templates.");
+    let dir_path_string = shellexpand::tilde("~/.config/sass/templates/").into_owned().to_string();
+    let xcode_path_string = shellexpand::tilde("~/Library/Developer/Xcode/Templates").into_owned().to_string();
+    let dir_path = Path::new(&dir_path_string);
+    let xcode_path = Path::new(&xcode_path_string);
+    let dir_exists = fs::metadata(dir_path).is_ok() && fs::metadata(xcode_path).is_ok();
+    if dir_exists {
+        let mut xcode_pathbuf = xcode_path.to_path_buf();
+        xcode_pathbuf.push("sass");
+        _ = fs::remove_dir_all(&xcode_pathbuf);
+        match copy_dir(dir_path, xcode_pathbuf.as_path()) {
+            Ok(_result) => (),
+            Err(error) => println!("Error: {}", error),
+        }
+    }
 }
 
 fn setup_config_file() {

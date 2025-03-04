@@ -15,6 +15,7 @@ args=(
     '(-pd --wipe-derived)'{-pd,--wipe-derived}'[wipes your derived data]'
     '(-rp --install-packages)'{-rp,--install-packages}'[uses swiftcli to install spm packages recursively]'
     '(-ip --install-pods)'{-ip,--install-pods}'[installs pods]'
+    '(-ut --update-templates)'{-ut,--update-templates}'[updates templates from config folder]'
 )
 
 _arguments -s -S $args

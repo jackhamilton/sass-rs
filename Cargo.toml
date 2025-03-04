@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+copy_dir = "0.1.3"
 file-lock = "2.1.11"
 fs2 = "0.4.3"
 regex = "1.11.1"
