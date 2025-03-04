@@ -194,6 +194,7 @@ fn wipe_derived_data(intermediates_only: bool) {
         if intermediates_only {
             target_path.push("Build");
             target_path.push("Intermediates.noindex");
+            target_path.push("PrecompiledHeaders");
         }
         for i in 1..retry_cap {
             match fs::remove_dir_all(target_path.clone()) {
