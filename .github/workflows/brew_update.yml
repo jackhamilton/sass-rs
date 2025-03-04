@@ -1,0 +1,23 @@
+name: BrewUpdate
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The new version number (in 3.x.x format)'
+        required: true
+
+jobs:
+  homebrew:
+    name: Bump Homebrew formula
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: mislav/bump-homebrew-formula-action@v2
+        with:
+          create-pullrequest: false
+          formula-path: Formula/sass.rb
+          tag-name: ${{ github.event.inputs.version }}
+          homebrew-tap: jackhamilton/sass
+        env:
+          COMMITTER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
