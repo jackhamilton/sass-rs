@@ -18,6 +18,6 @@ jobs:
           create-pullrequest: false
           formula-path: Formula/sass.rb
           tag-name: ${{ github.event.inputs.version }}
-          homebrew-tap: jackhamilton/sass
+          homebrew-tap: jackhamilton/homebrew-sass
         env:
           COMMITTER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
