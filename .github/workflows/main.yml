@@ -6,6 +6,8 @@ on:
      - '*'
   workflow_dispatch:
 
+permissions: write-all
+
 jobs:
   release:
     strategy:
@@ -72,5 +74,4 @@ jobs:
         COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
       with:
         formula-name: sass
-        # https://github.com/mislav/bump-homebrew-formula-action/issues/58
-        formula-path: Formula/sass.rb
+        homebrew-tap: jackhamilton/sass
