@@ -25,8 +25,13 @@ fn main() {
     if args.len() < 2 {
         help();
     }
-    let arg = args[1].clone();
-    match arg.as_str() {
+    for item in args.iter().skip(1) {
+        exec_arg(item)
+    }
+}
+
+fn exec_arg(arg: &str) {
+    match arg {
         "-h" => help(),
         "--help" => help(),
         "-qc" => quick_clean(),
@@ -59,32 +64,21 @@ fn main() {
         "--reset-packages" => reset_packages(),
         "-ut" => update_templates(),
         "--update-templates" => update_templates(),
+        "--completions" => echo_completions(),
         "-t" => test(),
         _ => help(),
     }
 }
 
 fn help() {
-    println!("\
-        -h => print this help menu\n\n\
-        -- Basic --\n\
-        --quick-clean, -qc => cleans build intermediates that can cause problems\n\
-        --clean, -c => cleans derived data and packages and rebuilds project\n\
-        --full-clean, -fc => rebuilds project, force purging everything it can (slow)\n\
-        --rebuild, -rb => rebuilds the project via xcodebuild on your configured workspace and scheme, then rebuilds the build server\n\
-        --build-server, -bs => reconstructs buildServer.json via your configured workspace and scheme\n\
-        --reset-packages, -p => reinstalls spm packages in non-build subdirectories\n\n\
-        -- Config --\n\
-        --config, -i => sets up a config file\n\
-        --run-deps-script, -d => runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)\n\
-        --update-templates, -ut => copies the contents of ~/.config/sass/templates/ to your xcode templates dir under a 'sass' subfolder, overwriting previous contents\n\n\
-        -- Fine-grained control commands -- \n\
-        --clean-pods, -cp => uses swiftcli tools to clean your pods\n\
-        --clean-packages, -cP => uses swiftcli tools to clean your packages\n\
-        --wipe-derived, -pd => purges derived data\n\
-        --install-packages, -rp => uses swiftcli tools to install SPM packages\n\
-        --install-pods, -ip => runs pod install (via bundler if detected)\n\
-    ");
+    let help_message = include_str!("help.txt");
+    println!("{help_message}");
+    std::process::exit(0);
+}
+
+fn echo_completions() {
+    let completions = include_str!("_sass");
+    println!("{completions}");
     std::process::exit(0);
 }
 
@@ -372,9 +366,9 @@ fn install_packages() {
 // Checks if you use a bundler
 fn _uses_bundler() -> bool {
     let output = Command::new("gem")
-            .args(["list", "--local"])
-            .output()
-            .expect("failed to execute process");
+        .args(["list", "--local"])
+        .output()
+        .expect("failed to execute process");
 
     let gems = String::from_utf8(output.stdout).unwrap_or(String::from(""));
     let bundler_search = Regex::new(r"bundler").expect("Bundler regex failed to parse");
@@ -391,9 +385,9 @@ fn _uses_bundler() -> bool {
 
 fn git_root() -> String {
     let output = Command::new("git")
-            .args(["rev-parse", "--show-toplevel"])
-            .output()
-            .expect("failed to execute process");
+        .args(["rev-parse", "--show-toplevel"])
+        .output()
+        .expect("failed to execute process");
     let mut str = String::from_utf8(output.stdout).unwrap_or(String::from(""));
     str.pop();
     str
@@ -405,7 +399,7 @@ fn setup_and_get_config() -> Config {
 }
 
 fn update_templates() {
-   println!("Updating templates.");
+    println!("Updating templates.");
     let dir_path_string = shellexpand::tilde("~/.config/sass/templates/").into_owned().to_string();
     let xcode_path_string = shellexpand::tilde("~/Library/Developer/Xcode/Templates").into_owned().to_string();
     let dir_path = Path::new(&dir_path_string);
