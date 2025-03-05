@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: mislav/bump-homebrew-formula-action@v2
+      - uses: mislav/bump-homebrew-formula-action@v3.2
         with:
           create-pullrequest: false
           formula-path: Formula/sass.rb
