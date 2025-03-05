@@ -4,6 +4,7 @@ A small CLI tool to fix various XCode build issues and manage templates. Integra
 
 ## Commands:
 ### Basic/Core
+
 ```zsh
 --quick-clean, -qc
 ```
@@ -31,10 +32,12 @@ reconstructs buildServer.json via your configured workspace and scheme
 
 ```zsh
 --reset-packages, -p
-g```
+```
 reinstalls spm packages in non-build subdirectories
 
+
 ### Configuration
+
 ```zsh
 --config, -i
 ```
@@ -57,6 +60,7 @@ copies the contents of ~/.config/sass/templates/ to your xcode templates dir und
 
 
 ### Fine-grained control
+
 ```zsh
 --clean-pods, -cp
 ```
