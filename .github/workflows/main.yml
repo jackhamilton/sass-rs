@@ -46,7 +46,7 @@ jobs:
         command: c
         cwd: ./target/release
         files: |
-          ./sass
+          sass
         outPath: sass-mac.tar.gz
 
     - name: Set SHA
