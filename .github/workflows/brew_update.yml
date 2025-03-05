@@ -16,7 +16,9 @@ jobs:
       - uses: mislav/bump-homebrew-formula-action@v3.2
         with:
           create-pullrequest: false
+          formula-name: sass
           formula-path: Formula/sass.rb
+          base-branch: main
           tag-name: ${{ github.event.inputs.version }}
           homebrew-tap: jackhamilton/homebrew-sass
           download-url: https://github.com/jackhamilton/sass-rs/releases/download/${{ steps.extract-version.outputs.tag-name }}/sass-mac.tar.gz
