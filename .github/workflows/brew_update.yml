@@ -19,6 +19,6 @@ jobs:
           formula-path: Formula/sass.rb
           tag-name: ${{ github.event.inputs.version }}
           homebrew-tap: jackhamilton/homebrew-sass
-          download-url: https://github.com/jackhamilton/sass-rs/releases/download/${{ steps.extract-version.output }}/sass-mac.tar.gz
+          download-url: https://github.com/jackhamilton/sass-rs/releases/download/${{ steps.extract-version.outputs.tag-name }}/sass-mac.tar.gz
         env:
           COMMITTER_TOKEN: ${{ secrets.BREW_TOKEN }}
