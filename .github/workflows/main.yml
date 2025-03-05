@@ -42,7 +42,7 @@ jobs:
     - name: Entar
       if: matrix.os == 'macos-latest'
       run: |
-        tar -czf ./target/release/sass-mac.tar.gz ./target/release/sass
+        tar -czf ./target/release/sass-mac.tar.gz -C ./target/release .
 
     - name: Set SHA
       if: matrix.os == 'macos-latest'
