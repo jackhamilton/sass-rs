@@ -2,6 +2,26 @@
 
 A small CLI tool to fix various XCode build issues and manage templates. Integrates with xcodebuild-server to keep buildServer.json updated when commands are run.
 
+## Installation
+
+Available via homebrew (for mac, as xcode is only available on mac)
+
+```zsh
+brew tap jackhamilton/sass
+brew install sass
+```
+
+As usual, ensure the homebrew bin directory is in your $PATH.
+
+## Completions
+
+Completions can be installed in zsh in the same manner as rust's completions.
+For example, if you use znap, add the following to your .zshrc or a sourced script:
+
+
+```zsh
+znap fpath _sass 'sass --completions'
+```
 ## Commands:
 ### Basic/Core
 
@@ -85,12 +105,3 @@ uses swiftcli tools to install SPM packages
 --install-pods, -ip
 ```
 runs pod install (via bundler if detected)
-
-## Completions
-
-Completions can be installed in zsh in the same manner as rust's completions.
-For example, if you use znap, add the following to your .zshrc or a sourced script:
-
-```zsh
-znap fpath _sass 'sass --completions'
-```
