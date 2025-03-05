@@ -38,11 +38,16 @@ jobs:
       env:
         GITUI_RELEASE: 1
       run: cargo build --release
-        
-    - name: Entar
-      if: matrix.os == 'macos-latest'
-      run: |
-        tar -czf sass-mac.tar.gz -C ./target/release sass
+
+    - name: Compress action step
+      uses: a7ul/tar-action@v1.1.0
+      id: compress
+      with:
+        command: c
+        cwd: ./target/release
+        files: |
+          ./sass
+        outPath: sass-mac.tar.gz
 
     - name: Set SHA
       if: matrix.os == 'macos-latest'
