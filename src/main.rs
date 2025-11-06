@@ -1,3 +1,4 @@
+use cli_builder_macros::cli_builder;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io;
@@ -20,60 +21,103 @@ struct Config {
     workspace_name: Option<String>,
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        help();
-    }
-    for item in args.iter().skip(1) {
-        exec_arg(item)
-    }
+cli_builder! {
+    [
+        CLICommand {
+            short_flag: "q",
+            long_flag: "quick-clean",
+            command: quick_clean,
+            description: "cleans build intermediates that can cause problems"
+        },
+        CLICommand {
+            short_flag: "c",
+            long_flag: "clean",
+            command: clean,
+            description: "cleans derived data and packages and rebuilds project"
+        },
+        CLICommand {
+            short_flag: "f",
+            long_flag: "full-clean",
+            command: full_clean,
+            description: "rebuilds project, force purging everything it can (slow)"
+        },
+        CLICommand {
+            short_flag: "r",
+            long_flag: "rebuild",
+            command: rebuild,
+            description: "rebuilds the project via xcodebuild on your configured workspace and scheme, then rebuilds the build server"
+        },
+        CLICommand {
+            short_flag: "j",
+            long_flag: "build-server",
+            command: rebuild_build_server,
+            description: "reconstructs buildServer.json via your configured workspace and scheme"
+        },
+        CLICommand {
+            short_flag: "p",
+            long_flag: "reset-packages",
+            command: reset_packages,
+            description: "reinstalls spm packages in non-build subdirectories"
+        },
+        CLICommand {
+            short_flag: "c",
+            long_flag: "setup-config",
+            command: setup_config_file,
+            description: "sets up a config file"
+        },
+        CLICommand {
+            short_flag: "d",
+            long_flag: "deps-script",
+            command: run_deps_script,
+            description: "runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)"
+        },
+        CLICommand {
+            short_flag: "C",
+            long_flag: "completions",
+            command: echo_completions,
+            description: "prints zsh completions, add via e.g. \"znap fpath _sass 'sass --completions'\" for znap"
+        },
+        CLICommand {
+            short_flag: "t",
+            long_flag: "update-templates",
+            command: update_templates,
+            description: "copies the contents of ~/.config/sass/templates/ to your xcode templates dir under a 'sass' subfolder, overwriting previous contents"
+        },
+        CLICommand {
+            short_flag: "cP",
+            long_flag: "clean-pods",
+            command: wipe_pods,
+            description: "uses swiftcli tools to clean your pods"
+        },
+        CLICommand {
+            short_flag: "cp",
+            long_flag: "clean-packages",
+            command: clean_packages,
+            description: "uses swiftcli tools to clean your packages"
+        },
+        CLICommand {
+            short_flag: "w",
+            long_flag: "wipe-derived",
+            command: quick_clean,
+            description: "purges derived data"
+        },
+        CLICommand {
+            short_flag: "ip",
+            long_flag: "install-packages",
+            command: install_packages,
+            description: "uses swiftcli tools to install SPM packages"
+        },
+        CLICommand {
+            short_flag: "iP",
+            long_flag: "install-cocoapods",
+            command: install_pods,
+            description: "runs pod install (via bundler if detected)"
+        },
+    ]
 }
 
-fn exec_arg(arg: &str) {
-    match arg {
-        "-h" => help(),
-        "--help" => help(),
-        "-qc" => quick_clean(),
-        "--quick-clean" => quick_clean(),
-        "-c" => clean(),
-        "--clean" => clean(),
-        "-fc" => full_clean(),
-        "--full-clean" => full_clean(),
-        "-rb" => rebuild(),
-        "--rebuild" => rebuild(),
-        "-bs" => rebuild_build_server(),
-        "--build-server" => rebuild_build_server(),
-        "-i" => setup_config_file(),
-        "--config" => setup_config_file(),
-        "-cp" => wipe_pods(),
-        "--clean-pods" => wipe_pods(),
-        "-cP" => clean_packages(),
-        "--clean-packages" => clean_packages(),
-        "-ph" => wipe_pod_cache_hard(),
-        "--wipe-pods" => wipe_pod_cache_hard(),
-        "-pd" => wipe_derived_data(false),
-        "--wipe-derived" => wipe_derived_data(false),
-        "-rp" => install_packages(),
-        "--install-packages" => install_packages(),
-        "-ip" => install_pods(),
-        "--install-pods" => install_pods(),
-        "-d" => install_deps_script().expect("Error"),
-        "--run-deps-script" => install_deps_script().expect("Error"),
-        "-p" => reset_packages(),
-        "--reset-packages" => reset_packages(),
-        "-ut" => update_templates(),
-        "--update-templates" => update_templates(),
-        "--completions" => echo_completions(),
-        "-t" => test(),
-        _ => help(),
-    }
-}
-
-fn help() {
-    let help_message = include_str!("help.txt");
-    println!("{help_message}");
-    std::process::exit(0);
+fn run_deps_script() {
+    install_deps_script().expect("Error running deps script");
 }
 
 fn echo_completions() {

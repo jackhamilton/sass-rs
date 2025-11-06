@@ -4,6 +4,7 @@ version = "0.2.5"
 edition = "2021"
 
 [dependencies]
+cli-builder-macros = { version = "0.0.0", path = "../cli-builder-macros" }
 copy_dir = "0.1.3"
 file-lock = "2.1.11"
 fs2 = "0.4.3"
