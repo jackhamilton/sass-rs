@@ -1,6 +1,7 @@
 use cli_builder_macros::cli_builder;
+use toml_configurator::configurator_macros::config_builder;
+use toml_configurator::freezable_trait;
 use std::fs;
-use std::fs::OpenOptions;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
@@ -10,15 +11,13 @@ use std::{thread, time};
 
 use copy_dir::copy_dir;
 use regex::Regex;
-use toml::Table;
 use file_lock::{FileOptions, FileLock};
 use walkdir::WalkDir;
 
-#[derive(Clone)]
-struct Config {
-    post_install_script_location: Option<String>,
-    scheme: Option<String>,
-    workspace_name: Option<String>,
+config_builder! {
+    post_install_script_location: Option<String> = None,
+    scheme: Option<String> = None,
+    workspace_name: Option<String> = None,
 }
 
 cli_builder! {
@@ -56,7 +55,7 @@ cli_builder! {
         CLICommand {
             short_flag: "i",
             long_flag: "setup-config",
-            command: setup_config_file,
+            command: setup_config,
             description: "sets up a config file"
         },
         CLICommand {
@@ -424,9 +423,12 @@ fn git_root() -> String {
     str
 }
 
+fn setup_config() {
+    toml_configurator::get_config::<Config>("sass".to_string());
+}
+
 fn setup_and_get_config() -> Config {
-    setup_config_file();
-    load_config()
+    return toml_configurator::get_config("sass".to_string());
 }
 
 fn update_templates() {
@@ -444,72 +446,6 @@ fn update_templates() {
             Ok(_result) => (),
             Err(error) => println!("Error: {}", error),
         }
-    }
-}
-
-fn setup_config_file() {
-    println!("Setting up configuration file.");
-    let dir_path_string = shellexpand::tilde("~/.config/sass/").into_owned().to_string();
-    let dir_path = Path::new(&dir_path_string);
-    let dir_exists = fs::metadata(dir_path).is_ok();
-    let config_path_string = shellexpand::tilde("~/.config/sass/config.toml").into_owned().to_string();
-
-    let config_path = Path::new(&config_path_string);
-    let config_file_exists = fs::metadata(config_path).is_ok();
-    if !dir_exists {
-        if let Err(why) = fs::create_dir(dir_path) {
-            println!("! {:?}", why.kind());
-        }
-    }
-    if !config_file_exists {
-        touch(config_path).unwrap_or_else(|why| {
-            println!("! {:?}", why.kind());
-        });
-        let default_config = "#Relative to project's git root\n\
-            post_install_script_location = \"/scripts/install_dependencies.sh\"\n\n\
-            workspace_name = \"\"\n\
-            scheme = \"\"\n";
-        fs::write(config_path, default_config).expect("echo \"Unable to write config file.\"")
-    }
-}
-
-fn load_config() -> Config {
-    let config_path_string = shellexpand::tilde("~/.config/sass/config.toml").into_owned().to_string();
-    let config_path = Path::new(&config_path_string);
-    let config_contents = fs::read_to_string(config_path).expect("echo \"Could not read config.toml!\"");
-    let config = config_contents.parse::<Table>().expect("echo \"Could not parse config.toml!\"");
-    let mut post_install_script_location: Option<String> = None;
-    if config.contains_key("post_install_script_location") {
-        let post_install_script_location_str = config["post_install_script_location"].as_str();
-        if let Some(unwrap) = post_install_script_location_str {
-            post_install_script_location = Some(unwrap.to_string())
-        }
-    }
-    let mut scheme: Option<String> = None;
-    if config.contains_key("scheme") {
-        let scheme_str = config["scheme"].as_str();
-        if let Some(unwrap) = scheme_str {
-            scheme = Some(unwrap.to_string())
-        }
-    }
-    let mut workspace_name: Option<String> = None;
-    if config.contains_key("workspace_name") {
-        let workspace_name_str = config["workspace_name"].as_str();
-        if let Some(unwrap) = workspace_name_str {
-            workspace_name = Some(unwrap.to_string())
-        }
-    }
-    Config {
-        post_install_script_location,
-        scheme,
-        workspace_name
-    }
-}
-
-fn touch(path: &Path) -> io::Result<()> {
-    match OpenOptions::new().create(true).truncate(false).write(true).open(path) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(e),
     }
 }
 
