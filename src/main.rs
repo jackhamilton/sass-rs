@@ -144,11 +144,6 @@ fn full_clean() {
     rebuild_build_server();
 }
 
-fn test() {
-    let ret = _uses_bundler();
-    println!("{}", ret);
-}
-
 fn rebuild() {
     println!("Building...");
     let config = setup_and_get_config();
