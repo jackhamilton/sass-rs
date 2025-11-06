@@ -24,8 +24,8 @@ struct Config {
 cli_builder! {
     [
         CLICommand {
-            short_flag: "q",
-            long_flag: "quick-clean",
+            short_flag: "ci",
+            long_flag: "clean-intermediates",
             command: quick_clean,
             description: "cleans build intermediates that can cause problems"
         },
@@ -54,12 +54,6 @@ cli_builder! {
             description: "reconstructs buildServer.json via your configured workspace and scheme"
         },
         CLICommand {
-            short_flag: "p",
-            long_flag: "reset-packages",
-            command: reset_packages,
-            description: "reinstalls spm packages in non-build subdirectories"
-        },
-        CLICommand {
             short_flag: "i",
             long_flag: "setup-config",
             command: setup_config_file,
@@ -78,10 +72,16 @@ cli_builder! {
             description: "copies the contents of ~/.config/sass/templates/ to your xcode templates dir under a 'sass' subfolder, overwriting previous contents"
         },
         CLICommand {
-            short_flag: "cP",
-            long_flag: "clean-pods",
-            command: wipe_pods,
-            description: "uses swiftcli tools to clean your pods"
+            short_flag: "w",
+            long_flag: "wipe-derived",
+            command: generic_wipe_derived,
+            description: "purges derived data"
+        },
+        CLICommand {
+            short_flag: "p",
+            long_flag: "reset-packages",
+            command: reset_packages,
+            description: "reinstalls spm packages in non-build subdirectories"
         },
         CLICommand {
             short_flag: "cp",
@@ -90,10 +90,10 @@ cli_builder! {
             description: "uses swiftcli tools to clean your packages"
         },
         CLICommand {
-            short_flag: "w",
-            long_flag: "wipe-derived",
-            command: quick_clean,
-            description: "purges derived data"
+            short_flag: "cP",
+            long_flag: "clean-pods",
+            command: wipe_pods,
+            description: "uses swiftcli tools to clean your pods"
         },
         CLICommand {
             short_flag: "ip",
@@ -103,7 +103,7 @@ cli_builder! {
         },
         CLICommand {
             short_flag: "iP",
-            long_flag: "install-cocoapods",
+            long_flag: "install-pods",
             command: install_pods,
             description: "runs pod install (via bundler if detected)"
         },
@@ -121,6 +121,10 @@ fn reset_packages() {
 
 fn quick_clean() {
     wipe_derived_data(true);
+}
+
+fn generic_wipe_derived() {
+    wipe_derived_data(false);
 }
 
 fn clean() {
