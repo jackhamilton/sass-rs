@@ -48,7 +48,7 @@ cli_builder! {
             description: "rebuilds the project via xcodebuild on your configured workspace and scheme, then rebuilds the build server"
         },
         CLICommand {
-            short_flag: "j",
+            short_flag: "bs",
             long_flag: "build-server",
             command: rebuild_build_server,
             description: "reconstructs buildServer.json via your configured workspace and scheme"
@@ -60,7 +60,7 @@ cli_builder! {
             description: "reinstalls spm packages in non-build subdirectories"
         },
         CLICommand {
-            short_flag: "c",
+            short_flag: "i",
             long_flag: "setup-config",
             command: setup_config_file,
             description: "sets up a config file"
@@ -70,12 +70,6 @@ cli_builder! {
             long_flag: "deps-script",
             command: run_deps_script,
             description: "runs a custom script configurable via the config.toml (run -i, edit ~/.config/sass/config.toml)"
-        },
-        CLICommand {
-            short_flag: "C",
-            long_flag: "completions",
-            command: echo_completions,
-            description: "prints zsh completions, add via e.g. \"znap fpath _sass 'sass --completions'\" for znap"
         },
         CLICommand {
             short_flag: "t",
@@ -118,12 +112,6 @@ cli_builder! {
 
 fn run_deps_script() {
     install_deps_script().expect("Error running deps script");
-}
-
-fn echo_completions() {
-    let completions = include_str!("_sass");
-    println!("{completions}");
-    std::process::exit(0);
 }
 
 fn reset_packages() {
@@ -524,4 +512,25 @@ fn touch(path: &Path) -> io::Result<()> {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
     }
+}
+
+impl Runtime {
+            pub fn gen_completions_2(&self) -> ::std::string::String {
+                let arg_block: &Vec<String> = &self.commands.clone().into_iter().map(|command| {
+                    let mut filtered_description = command.description.replace("\"", "");
+                    filtered_description = filtered_description.replace("\'", "");
+                    return format!("\t'(-{} --{})'{{-{},--{}}}'[{}]'", command.short_flag, command.long_flag, command.short_flag, command.long_flag, filtered_description);
+                }).collect();
+                let args_block = arg_block.join("\n");
+                let name = env!("CARGO_PKG_NAME");
+                return format!("
+#compdef {name}
+local -a args
+args=(
+{args_block}
+)
+
+_arguments -s -S $args
+                ")
+            }
 }
