@@ -106,6 +106,12 @@ cli_builder! {
             command: install_pods,
             description: "runs pod install (via bundler if detected)"
         },
+        CLICommand {
+            short_flag: "ns",
+            long_flag: "nuke-simulators",
+            command: nuke_simulators,
+            description: "Uninstalls (shutdown) simulators from previous iOS versions and purges symbolication caches"
+        },
     ]
 }
 
@@ -232,6 +238,54 @@ fn wipe_derived_data(intermediates_only: bool) {
             thread::sleep(retry_dur);
         }
         println!("Failed to lock directory.");
+    }
+}
+
+fn nuke_simulators() {
+    // Delete old simulators
+    let output = Command::new("xcrun")
+        .args(["simctl", "list"])
+        .output()
+        .expect("failed to execute process");
+    let osver_regex = Regex::new(r"(?:-- iOS)\s*(?<ver>\S*)\s*--").expect("Package search regex failed to parse");
+    let str_output = String::from_utf8(output.stdout).expect("Did not decode properly.");
+    let mut versions = osver_regex.captures_iter(&str_output);
+    let first_ver_loc = versions.next().expect("Error finding first").name("ver").expect("Error resolving location").start();
+    let last_ver_loc = versions.last().expect("Error finding last").name("ver").expect("Error resolving location").start();
+
+    let id_regex = Regex::new(r"(?:\((?<id>\S*)\) \(Shutdown\))").expect("Failed to parse id regex");
+    let id_substr = &str_output[first_ver_loc..last_ver_loc];
+    let matches = id_regex.captures_iter(id_substr);
+    for id in matches {
+        let sim_id = id.name("id").expect("Error unwrapping sim id match").as_str();
+        println!("Deleting old simulator {}", sim_id);
+        Command::new("xcrun")
+            .args(["simctl", "delete", sim_id])
+            .output()
+            .expect("Failed to delete simulator");
+    }
+
+    println!("Deleting simulator symbolication caches.");
+
+    Command::new("xcrun")
+        .args(["simctl", "shutdown", "all"])
+        .output()
+        .expect("Failed to shutdown simulators");
+
+    let devices_dir = shellexpand::tilde("~/Library/Developer/CoreSimulator/Devices/").into_owned();
+    let walker = WalkDir::new(&devices_dir);
+    for entry in walker {
+        let path = match entry {
+            Ok(e) => e.into_path(),
+            Err(_) => continue,
+        };
+        if path.ends_with("Caches/com.apple.coresymbolicationd") {
+            println!("Removing {}", path.display());
+            match fs::remove_dir_all(&path) {
+                Ok(_) => (),
+                Err(error) => println!("Error removing {}: {}", path.display(), error),
+            }
+        }
     }
 }
 
