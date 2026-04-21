@@ -1,6 +1,7 @@
 use cli_builder_macros::cli_builder;
 use toml_configurator::configurator_macros::config_builder;
 use toml_configurator::freezable_trait;
+use toml_configurator::get_config;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -16,6 +17,7 @@ use walkdir::WalkDir;
 
 config_builder! {
     post_install_script_location: Option<String> = None,
+    project_derived_data_recursive_root: Option<String> = None,
     scheme: Option<String> = None,
     workspace_name: Option<String> = None,
 }
@@ -51,12 +53,6 @@ cli_builder! {
             long_flag: "build-server",
             command: rebuild_build_server,
             description: "reconstructs buildServer.json via your configured workspace and scheme"
-        },
-        CLICommand {
-            short_flag: "i",
-            long_flag: "setup-config",
-            command: setup_config,
-            description: "sets up a config file"
         },
         CLICommand {
             short_flag: "d",
@@ -112,6 +108,12 @@ cli_builder! {
             command: nuke_simulators,
             description: "Uninstalls (shutdown) simulators from previous iOS versions and purges symbolication caches"
         },
+        CLICommand {
+            short_flag: "wp",
+            long_flag: "wipe-project-derived",
+            command: wipe_project_derived_data,
+            description: "Deletes all subfolders named DerivedData-* recursively in the configured parent directory (project_derived_data_recursive_root)."
+        },
     ]
 }
 
@@ -155,7 +157,7 @@ fn full_clean() {
 
 fn rebuild() {
     println!("Building...");
-    let config = setup_and_get_config();
+    let config: Config = get_config("sass".to_string());
     let gitroot = git_root();
     let pods_dir = gitroot.clone() + "/.bundle/";
     match fs::remove_dir_all(pods_dir) {
@@ -175,7 +177,7 @@ fn rebuild() {
 
 fn rebuild_build_server() {
     println!("Generating buildServer.json...");
-    let config = setup_and_get_config();
+    let config: Config = get_config("sass".to_string());
     let gitroot = git_root();
     let workspace = config.workspace_name.expect("No workspace name found!");
     let scheme = config.scheme.expect("No scheme found!");
@@ -189,7 +191,7 @@ fn rebuild_build_server() {
 
 fn install_deps_script() -> Option<()> {
     println!("Executing dependency installation script.");
-    let config = setup_and_get_config();
+    let config: Config = get_config("sass".to_string());
     let git_root = git_root();
     let script_dir = git_root.clone() + config.post_install_script_location?.as_str();
     Command::new("sh")
@@ -296,6 +298,27 @@ fn get_derived_data_folders() -> io::Result<Vec<PathBuf>> {
         .collect::<Result<Vec<_>, io::Error>>()?;
 
     Ok(entries)
+}
+
+fn wipe_project_derived_data() {
+    let config: Config = get_config("sass".to_string());
+    let derived_data_str = shellexpand::tilde(&config.project_derived_data_recursive_root.expect("Error - project recursive root not specified in config")).into_owned().to_string();
+    println!("Walking directory at {}", &derived_data_str);
+    let walker = WalkDir::new(&derived_data_str);
+    for entry in walker {
+        let path = match entry {
+            Ok(e) => e.into_path(),
+            Err(_) => continue,
+        };
+        if let Some(file_name) = path.file_name() &&
+            file_name.to_string_lossy().starts_with("DerivedData-") {
+            println!("Removing {}", path.display());
+            match fs::remove_dir_all(&path) {
+                Ok(_) => (),
+                Err(error) => println!("Error removing {}: {}", path.display(), error),
+            }
+        }
+    }
 }
 
 fn wipe_pod_cache_hard() {
@@ -475,14 +498,6 @@ fn git_root() -> String {
     let mut str = String::from_utf8(output.stdout).unwrap_or(String::from(""));
     str.pop();
     str
-}
-
-fn setup_config() {
-    toml_configurator::get_config::<Config>("sass".to_string());
-}
-
-fn setup_and_get_config() -> Config {
-    return toml_configurator::get_config("sass".to_string());
 }
 
 fn update_templates() {
