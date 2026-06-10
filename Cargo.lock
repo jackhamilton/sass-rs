@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "sass"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "cli-builder-macros",
  "copy_dir",

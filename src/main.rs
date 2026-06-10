@@ -18,8 +18,8 @@ use walkdir::WalkDir;
 config_builder! {
     post_install_script_location: Option<String> = None,
     project_derived_data_recursive_root: Option<String> = None,
-    scheme: String = "",
-    workspace_name: String = "",
+    scheme: String = "".to_string(),
+    workspace_name: String = "".to_string(),
 }
 
 cli_builder! {
@@ -164,8 +164,8 @@ fn rebuild() {
         Ok(_result) => (),
         Err(error) => println!("Error: {}", error),
     }
-    let workspace = config.workspace_name.expect("No workspace name found!");
-    let scheme = config.scheme.expect("No scheme found!");
+    let workspace = config.workspace_name;
+    let scheme = config.scheme;
     let output = Command::new("xcodebuild")
         .args(["-workspace", format!("{}.xcworkspace", workspace).as_str(), "-scheme", scheme.as_str(), "-destination", r"generic/platform=iOS Simulator", "-resultBundlePath", ".bundle", "OTHER_CFLAGS=\"-DCMAKE_C_COMPILER_LAUNCHER=$(which sccache) -DCMAKE_CXX_COMPILER_LAUNCHER=$(which sccache)\""])
         .current_dir(gitroot)
@@ -179,8 +179,8 @@ fn rebuild_build_server() {
     println!("Generating buildServer.json...");
     let config: Config = get_config("sass".to_string());
     let gitroot = git_root();
-    let workspace = config.workspace_name.expect("No workspace name found!");
-    let scheme = config.scheme.expect("No scheme found!");
+    let workspace = config.workspace_name;
+    let scheme = config.scheme;
     let output = Command::new("xcode-build-server")
         .args(["config", "-workspace", format!("{}.xcworkspace", workspace).as_str(), "-scheme", scheme.as_str()])
         .current_dir(gitroot)
