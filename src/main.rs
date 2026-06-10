@@ -18,8 +18,8 @@ use walkdir::WalkDir;
 config_builder! {
     post_install_script_location: Option<String> = None,
     project_derived_data_recursive_root: Option<String> = None,
-    scheme: Option<String> = None,
-    workspace_name: Option<String> = None,
+    scheme: String = "",
+    workspace_name: String = "",
 }
 
 cli_builder! {
