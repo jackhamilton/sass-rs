@@ -43,6 +43,12 @@ cli_builder! {
             description: "rebuilds project, force purging everything it can (slow)"
         },
         CLICommand {
+            short_flag: "fc",
+            long_flag: "full-clean-compat",
+            command: full_clean,
+            description: "compatibility alias for -f"
+        },
+        CLICommand {
             short_flag: "r",
             long_flag: "rebuild",
             command: rebuild,
@@ -234,7 +240,7 @@ fn wipe_derived_data(intermediates_only: bool) {
         }
         for i in 1..retry_cap {
             match fs::remove_dir_all(target_path.clone()) {
-                Ok(_some) => return,
+                Ok(_some) => break,
                 Err(error) => println!("Error: {}. Directory could be locked, retrying. Attempt {} of 15.", error, i),
             }
             thread::sleep(retry_dur);
