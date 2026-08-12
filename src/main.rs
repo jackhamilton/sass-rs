@@ -11,8 +11,8 @@ use std::process::Command;
 use std::{thread, time};
 
 use copy_dir::copy_dir;
+use file_lock::{FileLock, FileOptions};
 use regex::Regex;
-use file_lock::{FileOptions, FileLock};
 use walkdir::WalkDir;
 
 config_builder! {
@@ -222,14 +222,6 @@ fn wipe_derived_data(intermediates_only: bool) {
             continue
         }
 
-        let mut mut_path = path.clone();
-        mut_path.push("info.plist");
-        let lock_for_writing = FileOptions::new().write(true).create_new(false);
-        let lock = match FileLock::lock(mut_path, true, lock_for_writing) {
-            Ok(lock) => lock,
-            Err(_err) => panic!("Error locking derived data!"),
-        };
-        let _= lock.unlock();
         let retry_dur = time::Duration::from_millis(999);
         let retry_cap = 15;
         let mut target_path = path;
