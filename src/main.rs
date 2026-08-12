@@ -222,6 +222,16 @@ fn wipe_derived_data(intermediates_only: bool) {
             continue
         }
 
+        let lockfile_path = path.join("info.plist");
+        if !lockfile_path.exists() {
+            println!("Skipping {}: missing {}", path.display(), lockfile_path.display());
+            continue;
+        }
+        if !can_lock(&lockfile_path) {
+            println!("Skipping {}: could not acquire lock on {}", path.display(), lockfile_path.display());
+            continue;
+        }
+
         let retry_dur = time::Duration::from_millis(999);
         let retry_cap = 15;
         let mut target_path = path;
@@ -238,6 +248,20 @@ fn wipe_derived_data(intermediates_only: bool) {
             thread::sleep(retry_dur);
         }
         println!("Failed to lock directory.");
+    }
+}
+
+fn can_lock(path: &Path) -> bool {
+    let options = FileOptions::new().write(true).create_new(false);
+    match FileLock::lock(path, true, options) {
+        Ok(lock) => {
+            let _ = lock.unlock();
+            true
+        }
+        Err(error) => {
+            println!("Could not lock {}: {}", path.display(), error);
+            false
+        }
     }
 }
 
@@ -325,15 +349,15 @@ fn wipe_pod_cache_hard() {
     let pods_dir = gitroot.clone() + "/Pods/";
     let lockfile_path = gitroot + "/Podfile.lock";
     let cocoa_dir_string = shellexpand::tilde("~/Library/Caches/CocoaPods/").into_owned().to_string();
-    let lock_for_writing = FileOptions::new().write(true).create_new(false);
+    let lockfile = Path::new(&lockfile_path);
+    if lockfile.exists() && !can_lock(lockfile) {
+        println!("Skipping Pod cleanup: could not acquire lock on {}", lockfile.display());
+        return;
+    }
 
-    let lock = match FileLock::lock(lockfile_path.clone(), true, lock_for_writing) {
-        Ok(lock) => lock,
-        Err(_err) => panic!("Error locking derived data!"),
-    };
-    _ = lock.unlock();
     match fs::remove_file(lockfile_path) {
         Ok(_result) => (),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => (),
         Err(error) => println!("Error: {}", error),
     }
     match fs::remove_dir_all(cocoa_dir_string) {
