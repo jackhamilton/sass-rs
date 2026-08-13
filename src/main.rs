@@ -240,14 +240,20 @@ fn wipe_derived_data(intermediates_only: bool) {
             target_path.push("Intermediates.noindex");
             target_path.push("PrecompiledHeaders");
         }
+        let mut removed = false;
         for i in 1..retry_cap {
             match fs::remove_dir_all(target_path.clone()) {
-                Ok(_some) => break,
+                Ok(_some) => {
+                    removed = true;
+                    break;
+                }
                 Err(error) => println!("Error: {}. Directory could be locked, retrying. Attempt {} of 15.", error, i),
             }
             thread::sleep(retry_dur);
         }
-        println!("Failed to lock directory.");
+        if !removed {
+            println!("Failed to remove {} after {} attempts.", target_path.display(), retry_cap - 1);
+        }
     }
 }
 
